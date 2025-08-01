@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Context;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Categoria>? Categorias { get; set; }
     public DbSet<Produto>? Produtos { get; set; }
