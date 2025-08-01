@@ -1,7 +1,7 @@
 ﻿using APICatalogo.Models;
 using APICatalogo.Pagination;
 
-namespace APICatalogo.Repositories;
+namespace APICatalogo.Repositories.Interfaces;
 
 public interface ICategoriaRepository :  IRepository<Categoria>
 {

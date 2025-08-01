@@ -2,6 +2,8 @@
 using APICatalogo.DTO;
 using APICatalogo.Models;
 using APICatalogo.Pagination;
+using APICatalogo.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Repositories;
 
@@ -9,39 +11,37 @@ public class ProdutoRepository(AppDbContext context) : Repository<Produto>(conte
 {
     public async Task<PagedList<Produto>> GetProdutosAsync(ProdutosParameters produtosParameters)
     {
-        var produtos = await GetAllAsync();
-        var produtosOrdenados = produtos.OrderBy(p => p.ProdutoId).AsQueryable();
-        var resultado =  PagedList<Produto>.ToPagedList(produtosOrdenados,produtosParameters.PageNumber, produtosParameters.PageSize);
-        return resultado;
+        IQueryable<Produto> query = _context.Produtos.OrderBy(p => p.ProdutoId) ?? throw new ArgumentNullException(nameof(query));
+        
+        return await PagedList<Produto>.ToPagedListAsync(query,produtosParameters.PageNumber, produtosParameters.PageSize);
     }
 
     public async Task<PagedList<Produto>> GetProdutosFiltroPrecoAsync(ProdutosFiltroPreco produtosFiltroParameters)
     {
-        var produtos = await GetAllAsync();
+        IQueryable<Produto> query = _context.Produtos ?? throw new ArgumentNullException(nameof(query));
     
         if (produtosFiltroParameters.Preco.HasValue && produtosFiltroParameters.PrecoCriterio.HasValue)
         {
             var preco = produtosFiltroParameters.Preco.Value;
             var criterio = produtosFiltroParameters.PrecoCriterio.Value;
 
-            produtos = criterio switch
+            query = criterio switch
             {
-                CriterioEnum.Maior => produtos.Where(p => p.Preco > preco),
-                CriterioEnum.Igual => produtos.Where(p => p.Preco == preco),
-                CriterioEnum.Menor => produtos.Where(p => p.Preco < preco),
+                CriterioEnum.Maior => query.Where(p => p.Preco > preco),
+                CriterioEnum.Igual => query.Where(p => p.Preco == preco),
+                CriterioEnum.Menor => query.Where(p => p.Preco < preco),
                 _ => throw new ArgumentOutOfRangeException(nameof(criterio))
             };
 
-            produtos = produtos.OrderBy(p => p.Preco);
+            query =  query.OrderBy(p => p.Preco);
         }
 
-        return PagedList<Produto>.ToPagedList(produtos.AsQueryable(), produtosFiltroParameters.PageNumber, produtosFiltroParameters.PageSize);
+        return await PagedList<Produto>.ToPagedListAsync(query, produtosFiltroParameters.PageNumber, produtosFiltroParameters.PageSize);
     }
 
 
     public async Task<IEnumerable<Produto>> GetProdutosPorCategoriaAsync(int id)
     {
-        var  produtos = await GetAllAsync();
-        return produtos.Where(c => c.CategoriaId == id);
+        return await _context.Produtos.Where(c => c.CategoriaId == id).ToListAsync();
     }
 }

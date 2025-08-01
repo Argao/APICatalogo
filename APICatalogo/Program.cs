@@ -8,6 +8,7 @@ using APICatalogo.DTO.Mappings;
 using APICatalogo.Extensions;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
+using APICatalogo.Repositories.Interfaces;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -1,4 +1,4 @@
-﻿namespace APICatalogo.Repositories;
+﻿namespace APICatalogo.Repositories.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
