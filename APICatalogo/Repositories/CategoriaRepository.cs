@@ -7,23 +7,25 @@ namespace APICatalogo.Repositories;
 
 public class CategoriaRepository(AppDbContext context) : Repository<Categoria>(context), ICategoriaRepository
 {
-    public PagedList<Categoria> GetCategoriasFiltroNome(CategoriaFiltroNome categoriaParameters)
+    public async Task<PagedList<Categoria>> GetCategoriasFiltroNomeAsync (CategoriaFiltroNome categoriaParameters)
     {
-        var categorias = GetAll().AsQueryable();
+        var categorias = await GetAllAsync();
         
         if (!string.IsNullOrEmpty(categoriaParameters.Nome))
         {
             categorias = categorias.Where(c => c.Nome.Contains(categoriaParameters.Nome));
         }
         
-        return PagedList<Categoria>.ToPagedList(categorias, categoriaParameters.PageNumber, categoriaParameters.PageSize);
+        return PagedList<Categoria>.ToPagedList(categorias.AsQueryable(), categoriaParameters.PageNumber, categoriaParameters.PageSize);
         
     }
 
-    public PagedList<Categoria> GetCategorias(CategoriaParameters categoriaParameters)
+    public async Task<PagedList<Categoria>> GetCategoriasAsync(CategoriaParameters categoriaParameters)
     {
-        var categorias = GetAll().OrderBy(c => c.CategoriaId).AsQueryable();
-        var categoriasOrdenadas =  PagedList<Categoria>.ToPagedList(categorias, categoriaParameters.PageNumber, categoriaParameters.PageSize);
-        return categoriasOrdenadas;
+        var categorias = await GetAllAsync();
+        var categoriasOrdenadas = categorias.OrderBy(c => c.CategoriaId).AsQueryable();
+        var resultado =  PagedList<Categoria>
+            .ToPagedList(categoriasOrdenadas, categoriaParameters.PageNumber, categoriaParameters.PageSize);
+        return resultado;
     }
 }

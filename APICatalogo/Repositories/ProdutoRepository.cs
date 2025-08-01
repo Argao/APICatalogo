@@ -7,16 +7,17 @@ namespace APICatalogo.Repositories;
 
 public class ProdutoRepository(AppDbContext context) : Repository<Produto>(context), IProdutoRepository
 {
-    public PagedList<Produto> GetProdutos(ProdutosParameters produtosParameters)
+    public async Task<PagedList<Produto>> GetProdutosAsync(ProdutosParameters produtosParameters)
     {
-        var produtos = GetAll().OrderBy(p => p.ProdutoId).AsQueryable();
-        var produtosOrdenados =  PagedList<Produto>.ToPagedList(produtos, produtosParameters.PageNumber, produtosParameters.PageSize);
-        return produtosOrdenados;
+        var produtos = await GetAllAsync();
+        var produtosOrdenados = produtos.OrderBy(p => p.ProdutoId).AsQueryable();
+        var resultado =  PagedList<Produto>.ToPagedList(produtosOrdenados,produtosParameters.PageNumber, produtosParameters.PageSize);
+        return resultado;
     }
 
-    public PagedList<Produto> GetProdutosFiltroPreco(ProdutosFiltroPreco produtosFiltroParameters)
+    public async Task<PagedList<Produto>> GetProdutosFiltroPrecoAsync(ProdutosFiltroPreco produtosFiltroParameters)
     {
-        var produtos = GetAll().AsQueryable();
+        var produtos = await GetAllAsync();
     
         if (produtosFiltroParameters.Preco.HasValue && produtosFiltroParameters.PrecoCriterio.HasValue)
         {
@@ -34,12 +35,13 @@ public class ProdutoRepository(AppDbContext context) : Repository<Produto>(conte
             produtos = produtos.OrderBy(p => p.Preco);
         }
 
-        return PagedList<Produto>.ToPagedList(produtos, produtosFiltroParameters.PageNumber, produtosFiltroParameters.PageSize);
+        return PagedList<Produto>.ToPagedList(produtos.AsQueryable(), produtosFiltroParameters.PageNumber, produtosFiltroParameters.PageSize);
     }
 
 
-    public IEnumerable<Produto> GetProdutosPorCategoria(int id)
+    public async Task<IEnumerable<Produto>> GetProdutosPorCategoriaAsync(int id)
     {
-        return GetAll().Where(c => c.CategoriaId == id);
+        var  produtos = await GetAllAsync();
+        return produtos.Where(c => c.CategoriaId == id);
     }
 }
