@@ -9,6 +9,7 @@ using APICatalogo.Extensions;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,13 @@ builder.Services.AddSwaggerGen(c =>
     c.SchemaFilter<EnumSchemaFilter>();
 });
 
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication("Bearer").AddJwtBearer();
+
+
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();;
 
 var sqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -41,6 +49,7 @@ builder.Services.AddScoped<ApiLoggingFilter>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 //builder.Services.AddScoped(typeof(IRepository<>),typeof(Repository<>));
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Logging.AddProvider(new CustomLoggerProvider(new CustomLoggerProviderConfiguration
@@ -68,4 +77,4 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-app.Run();
+await app.RunAsync();

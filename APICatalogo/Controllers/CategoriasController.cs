@@ -6,6 +6,7 @@ using APICatalogo.Models;
 using APICatalogo.Pagination;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -27,10 +28,10 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetAsync()
     {
         var categorias = await _uow.CategoriaRepository.GetAllAsync();
-        
         return Ok(categorias.ToCategoriaDTOList());
     }
 
