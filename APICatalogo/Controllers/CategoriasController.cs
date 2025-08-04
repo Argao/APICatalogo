@@ -26,14 +26,15 @@ public class CategoriasController : ControllerBase
         _logger = logger;
         _uow = uow;
     }
-
-    [HttpGet]
+    
     [Authorize]
+    [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetAsync()
     {
         var categorias = await _uow.CategoriaRepository.GetAllAsync();
         return Ok(categorias.ToCategoriaDTOList());
     }
+
 
     [HttpGet("{id:int}", Name = "ObterCategoria")]
     public async Task<ActionResult<CategoriaDTO>> GetAsync(int id)

@@ -9,6 +9,7 @@ using APICatalogo.Extensions;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.Interfaces;
+using APICatalogo.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -17,14 +18,9 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers(options =>
-    {
-        options.Filters.Add(typeof(ApiExceptionFilter));
-    })
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    }).AddNewtonsoftJson();
+builder.Services.AddControllers(options => { options.Filters.Add(typeof(ApiExceptionFilter)); })
+    .AddJsonOptions(options => { options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles; })
+    .AddNewtonsoftJson();
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -32,10 +28,41 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
     c.SchemaFilter<EnumSchemaFilter>();
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
 });
 
-var secreteKey = builder.Configuration["JWT:SecretKey"] ?? throw new ArgumentException("Invalid secret key!");
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
+var sqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(sqlConnection));
+
+var secreteKey = builder.Configuration["JWT:SecretKey"] ?? throw new ArgumentException("Invalid secret key!");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -56,25 +83,14 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["JWT:ValidAudience"],
         IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secreteKey))
     };
-} );
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
-
-var sqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(sqlConnection));
+});
 
 builder.Services.AddScoped<ApiLoggingFilter>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 //builder.Services.AddScoped(typeof(IRepository<>),typeof(Repository<>));
-
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Logging.AddProvider(new CustomLoggerProvider(new CustomLoggerProviderConfiguration
 {
@@ -82,12 +98,12 @@ builder.Logging.AddProvider(new CustomLoggerProvider(new CustomLoggerProviderCon
 }));
 
 builder.Services.AddAutoMapper(cfg =>
-    {
-        cfg.CreateMap<CategoriaDTO, Categoria>().ReverseMap();
-        cfg.CreateMap<ProdutoDTO, Produto>().ReverseMap();
-        cfg.CreateMap<Produto, produtoDTOUpdateRequest>().ReverseMap();
-        cfg.CreateMap<Produto, ProdutoDTOUpdateResponse>().ReverseMap();
-    });
+{
+    cfg.CreateMap<CategoriaDTO, Categoria>().ReverseMap();
+    cfg.CreateMap<ProdutoDTO, Produto>().ReverseMap();
+    cfg.CreateMap<Produto, produtoDTOUpdateRequest>().ReverseMap();
+    cfg.CreateMap<Produto, ProdutoDTOUpdateResponse>().ReverseMap();
+});
 
 var app = builder.Build();
 

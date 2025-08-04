@@ -4,7 +4,6 @@ namespace APICatalogo.DTO;
 
 public class CategoriaDTO
 {
-    
     public int CategoriaId { get; set; }
 
     [Required]
