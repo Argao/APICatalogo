@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using APICatalogo.DTO;
 using APICatalogo.Models;
@@ -19,15 +20,67 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly ILogger<AuthController> _logger;
     
-    public AuthController(ITokenService tokenService, IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    
+    public AuthController(ITokenService tokenService, IConfiguration configuration, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ILogger<AuthController> logger)
     {
         _tokenService = tokenService;
         _configuration = configuration;
         _userManager = userManager;
         _roleManager = roleManager;
+        _logger = logger;
     }
 
+
+    [HttpPost]
+    [Route("CreateRole")]
+    public async Task<IActionResult> CreateRole(string roleName)
+    {
+        var roleExists = await _roleManager.RoleExistsAsync(roleName);
+
+        if (roleExists)
+            return StatusCode(StatusCodes.Status400BadRequest,
+                new ResponseDTO { Status = "Error", Message = "Role already exists" });
+        
+        var roleResult = await _roleManager.CreateAsync(new IdentityRole(roleName));
+
+        if (roleResult.Succeeded)
+        {
+            _logger.LogInformation($"Role {roleName} created successfully");
+            return StatusCode(StatusCodes.Status201Created,
+                new ResponseDTO { Status = "Success", Message = $"Role {roleName} created successfully" });
+        }
+            
+        _logger.LogInformation(2, "Error");
+            
+        return StatusCode(StatusCodes.Status500InternalServerError,
+            new ResponseDTO { Status = "Error", Message = "Error creating role" });
+    }
+
+    [HttpPost]
+    [Route("AddUserToRole")]
+    public async Task<IActionResult> AddUserToRole(string userEmail, string roleName)
+    {
+        var user = await _userManager.FindByEmailAsync(userEmail);
+        
+        if (user is null) return NotFound("User not found");
+
+        if (!await  _roleManager.RoleExistsAsync(roleName)) return NotFound("Role not found");
+        
+        var result = await _userManager.AddToRoleAsync(user, roleName);
+
+        if (result.Succeeded)
+        {
+            _logger.LogInformation($"User {user.UserName} added to role {roleName}");
+            return StatusCode(StatusCodes.Status200OK, 
+                new ResponseDTO { Status = "Success", Message = $"User {user.UserName} added to role {roleName}" });
+        }
+        
+        _logger.LogInformation(1, $"Error: Unable to add user {user.UserName} to role {roleName}");
+        return StatusCode(StatusCodes.Status400BadRequest,
+            $"Error: Unable to add user {user.UserName} to role {roleName}");
+    }
 
     [HttpPost]
     [Route("login")]
