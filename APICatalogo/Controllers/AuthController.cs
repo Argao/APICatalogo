@@ -5,6 +5,7 @@ using APICatalogo.DTO;
 using APICatalogo.Models;
 using APICatalogo.Services;
 using Azure;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,7 @@ public class AuthController : ControllerBase
 
     [HttpPost]
     [Route("CreateRole")]
+    [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> CreateRole(string roleName)
     {
         var roleExists = await _roleManager.RoleExistsAsync(roleName);
@@ -60,6 +62,7 @@ public class AuthController : ControllerBase
 
     [HttpPost]
     [Route("AddUserToRole")]
+    [Authorize(Policy = "SuperAdminOnly")]
     public async Task<IActionResult> AddUserToRole(string userEmail, string roleName)
     {
         var user = await _userManager.FindByEmailAsync(userEmail);
@@ -96,6 +99,7 @@ public class AuthController : ControllerBase
         {
             new Claim(ClaimTypes.Name, user.UserName!),
             new Claim(ClaimTypes.Email, user.Email!),
+            new Claim("id", user.UserName!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
         
@@ -125,11 +129,11 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
     {
         var userExists = await _userManager.FindByNameAsync(registerDTO.UserName!);
-
-        if (userExists != null)
-        {
-            return StatusCode(StatusCodes.Status409Conflict, new  ResponseDTO { Status = "Error", Message = "User already exists" });
-        }
+        if (userExists != null) return StatusCode(StatusCodes.Status409Conflict, new  ResponseDTO { Status = "Error", Message = "User already exists" });
+        
+        var emailExists = await _userManager.FindByEmailAsync(registerDTO.Email!);
+        if (emailExists != null) return StatusCode(StatusCodes.Status409Conflict, new ResponseDTO { Status = "Error", Message = "Email already exists" });
+        
 
         ApplicationUser user = new()
         {
@@ -181,10 +185,10 @@ public class AuthController : ControllerBase
             refreshToken = newRefreshToken
         });
     }
-
-    [Authorize]
+    
     [HttpPost]
     [Route("revoke/{username}")]
+    [Authorize(Policy = "ExclusiveOnly")]
     public async Task<IActionResult> Revoke(string username)
     {
         var user = await _userManager.FindByNameAsync(username);

@@ -114,7 +114,9 @@ public class CategoriasController : ControllerBase
         return Ok(categoriaAtualizada.ToCategoriaDto());
     }
 
+    
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<CategoriaDTO>> DeleteAsync(int id)
     {
         var categoria = await _uow.CategoriaRepository.GetAsync(c=>c.CategoriaId == id);

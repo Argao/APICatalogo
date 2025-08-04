@@ -5,6 +5,7 @@ using APICatalogo.Pagination;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,16 +29,14 @@ public class ProdutosController : ControllerBase
 
 
     [HttpGet]
+    [Authorize(Policy = "UserOnly")]
     public async Task<ActionResult<IEnumerable<ProdutoDTO>>> GetAsync()
     {
         var produtos = await _uow.ProdutoRepository.GetAllAsync();
+        
 
-        if (produtos.Any())
-        {
-            return NotFound();
-        }
-
-        return Ok(_mapper.Map<IEnumerable<ProdutoDTO>>(produtos));
+        return (produtos.Any()) 
+            ? Ok(_mapper.Map<IEnumerable<ProdutoDTO>>(produtos)) : NotFound();
     }
 
     [HttpGet("pagination")]

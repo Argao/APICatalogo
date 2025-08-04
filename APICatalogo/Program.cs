@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using APICatalogo.Context;
 using APICatalogo.Filters;
 using APICatalogo.Logging;
@@ -84,6 +85,17 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secreteKey))
     };
 });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"))
+    .AddPolicy("SuperAdminOnly", policy => policy.RequireRole("Admin").RequireClaim("id","argao"))
+    .AddPolicy("UserOnly", policy => policy.RequireRole("User"))
+    .AddPolicy("ExclusivePoliceOnly", policy =>
+    {
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(claim => claim is { Type: "id", Value: "argao" }) || context.User.IsInRole("SuperAdmin"));
+    });
+
 
 builder.Services.AddScoped<ApiLoggingFilter>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
