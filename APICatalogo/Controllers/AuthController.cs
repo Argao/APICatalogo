@@ -85,6 +85,15 @@ public class AuthController : ControllerBase
             $"Error: Unable to add user {user.UserName} to role {roleName}");
     }
 
+
+    /// <summary>
+    /// Authenticates a user and generates access and refresh tokens upon successful login.
+    /// </summary>
+    /// <param name="loginDTO">An object containing the login credentials, including user name and password.</param>
+    /// <returns>
+    /// Returns an <see cref="IActionResult"/> containing the access token, refresh token, and token expiration time
+    /// if authentication is successful. Returns an Unauthorized status if authentication fails.
+    /// </returns>
     [HttpPost]
     [Route("login")]
     public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
@@ -124,6 +133,16 @@ public class AuthController : ControllerBase
         });
     }
 
+
+    /// <summary>
+    /// Registers a new user in the system with the provided credentials.
+    /// </summary>
+    /// <param name="registerDTO">An object containing the registration details such as user name, email, and password.</param>
+    /// <returns>
+    /// Returns an <see cref="IActionResult"/> indicating the success or failure of the registration process.
+    /// On success, returns a message confirming the user creation.
+    /// On failure, returns an appropriate status code and error message (e.g., user or email already exists, internal server error).
+    /// </returns>
     [HttpPost]
     [Route("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)

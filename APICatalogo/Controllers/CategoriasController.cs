@@ -7,14 +7,18 @@ using APICatalogo.Pagination;
 using APICatalogo.Repositories;
 using APICatalogo.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace APICatalogo.Controllers;
 
+//[EnableCors("OrigensComAcessoPermitido")]
 [Route("[controller]")]
 [ApiController]
+[EnableRateLimiting(("fixedwindow"))]
 public class CategoriasController : ControllerBase
 {
     
@@ -26,16 +30,30 @@ public class CategoriasController : ControllerBase
         _logger = logger;
         _uow = uow;
     }
-    
-    [Authorize]
+
+    /// <summary>
+    /// Retrieves a list of all categories as asynchronous operation.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an action result with a list of CategoriaDTO objects.</returns>
+    //[Authorize]
     [HttpGet]
+    [DisableRateLimiting]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetAsync()
     {
         var categorias = await _uow.CategoriaRepository.GetAllAsync();
         return Ok(categorias.ToCategoriaDTOList());
     }
 
-
+    /// <summary>
+    /// Retrieves a category by its identifier as an asynchronous operation.
+    /// </summary>
+    /// <param name="id">The unique identifier of the category to retrieve.</param>
+    /// <returns>
+    /// A task that represents the asynchronous operation. The task result contains
+    /// an action result with the requested category as a <see cref="CategoriaDTO"/> object,
+    /// or a not found result if the category does not exist.
+    /// </returns>
+    [DisableCors]
     [HttpGet("{id:int}", Name = "ObterCategoria")]
     public async Task<ActionResult<CategoriaDTO>> GetAsync(int id)
     {
@@ -50,6 +68,12 @@ public class CategoriasController : ControllerBase
         return Ok(categoria.ToCategoriaDto());
     }
 
+
+    /// <summary>
+    /// Retrieves all categories asynchronously.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.
+    /// The task result contains an action result with an enumerable of CategoriaDTO objects.</returns>
     [HttpGet("pagination")]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetAsync([FromQuery] CategoriaParameters categoriaParameters)
     {
@@ -57,8 +81,14 @@ public class CategoriasController : ControllerBase
         return ObterCategorias(categorias);
     }
 
+
+    /// <summary>
+    /// Retrieves a paginated list of filtered categories based on name as an asynchronous operation.
+    /// </summary>
+    /// <param name="categoriaParameters">The filter parameters used to refine the category list.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an action result with a list of filtered CategoriaDTO objects.</returns>
     [HttpGet("filter/nome/pagination")]
-    public async Task<ActionResult<IEnumerable<CategoriaDTO>>>GetCategoriasFiltadasAsync([FromQuery] CategoriaFiltroNome categoriaParameters)
+    public async Task<ActionResult<IEnumerable<CategoriaDTO>>> GetCategoriasFiltadasAsync([FromQuery] CategoriaFiltroNome categoriaParameters)
     {
         var categoriasFiltradas = await _uow.CategoriaRepository.GetCategoriasFiltroNomeAsync(categoriaParameters);
         return ObterCategorias(categoriasFiltradas);
@@ -82,6 +112,11 @@ public class CategoriasController : ControllerBase
         return Ok(categoriasDto);
     }
 
+    /// <summary>
+    /// Creates a new category.
+    /// </summary>
+    /// <param name="categoriaDto">The data transfer object containing the details of the category to be created.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an action result with the newly created category.</returns>
     [HttpPost]
     public async Task<ActionResult<CategoriaDTO>> PostAsync(CategoriaDTO categoriaDto)
     {
